@@ -80,14 +80,14 @@ try {
 <body>
     <div class="dashboard-container">
         <!-- Sidebar -->
-        <nav class="sidebar">
+            <nav class="sidebar">
             <div class="sidebar-header">
                 <h3>NeoBooks Admin</h3>
                 <p>Welcome, <?= htmlspecialchars($_SESSION['admin_username']) ?></p>
             </div>
             <ul class="sidebar-nav">
                 <li class="nav-item">
-                    <a href="dashboard.php" class="nav-link">
+                    <a href="dashboard.php" class="nav-link active">
                         <i class="fas fa-tachometer-alt"></i> Dashboard
                     </a>
                 </li>
@@ -102,12 +102,17 @@ try {
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="add_book.php" class="nav-link">
-                        <i class="fas fa-plus-circle"></i> Add Book
+                    <a href="book.php" class="nav-link">
+                        <i class="fas fa-credit-card"></i> Books
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="transactions.php" class="nav-link active">
+                    <a href="stationery.php" class="nav-link">
+                        <i class="fas fa-credit-card"></i> Stationery
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="transactions.php" class="nav-link">
                         <i class="fas fa-credit-card"></i> Transactions
                     </a>
                 </li>
@@ -118,7 +123,6 @@ try {
                 </li>
             </ul>
         </nav>
-
         <!-- Main Content -->
         <main class="main-content">
             <div class="page-header">

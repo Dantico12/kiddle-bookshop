@@ -77,6 +77,16 @@ try {
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="book.php" class="nav-link">
+                        <i class="fas fa-credit-card"></i> Books
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="stationery.php" class="nav-link">
+                        <i class="fas fa-credit-card"></i> Stationery
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="transactions.php" class="nav-link">
                         <i class="fas fa-credit-card"></i> Transactions
                     </a>

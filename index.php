@@ -12,14 +12,14 @@ $error_message = '';
 
 try {
     // Fetch featured books from database
-    $books_sql = "SELECT id, title, author, price, image, 'books' as category, rating, quantity, reorder_level, description, created_at FROM books WHERE quantity > 0 ORDER BY created_at DESC LIMIT 6";
+    $books_sql = "SELECT id, title, author, price, image, 'books' as category,quantity, reorder_level, description, created_at FROM books WHERE quantity > 0 ORDER BY created_at DESC LIMIT 6";
     $stmt = $conn->prepare($books_sql);
     $stmt->execute();
     $books_result = $stmt->get_result();
     $featured_books = $books_result->fetch_all(MYSQLI_ASSOC);
     
     // Fetch featured stationery from database
-    $stationery_sql = "SELECT id, name as title, '' as author, price, image, 'stationery' as category, 0 as rating, quantity, reorder_level, description, created_at FROM stationery WHERE quantity > 0 ORDER BY created_at DESC LIMIT 6";
+    $stationery_sql = "SELECT id, name as title, '' as author, price, image, 'stationery' as category, 0 as quantity, reorder_level, description, created_at FROM stationery WHERE quantity > 0 ORDER BY created_at DESC LIMIT 6";
     $stmt = $conn->prepare($stationery_sql);
     $stmt->execute();
     $stationery_result = $stmt->get_result();
@@ -52,6 +52,7 @@ $conn->close();
                 <img src="kiddle.jpeg" alt="KiddleBookshop Logo" class="logo-image">
                 <span class="logo-text">KiddleBookshop</span>
             </div>
+            <button class="menu-toggle">☰</button>
             <div class="nav-links">
                 <a href="index.php" class="nav-btn active">
                     <i class="fas fa-home"></i> Home
@@ -62,10 +63,10 @@ $conn->close();
                 <a href="bookshop.php?category=stationery" class="nav-btn">
                     <i class="fas fa-pen"></i> Stationery
                 </a>
-                <div class="cart-icon" onclick="toggleCart()">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count" id="cart-count">0</span>
-                </div>
+            </div>
+            <div class="cart-icon" onclick="toggleCart()">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="cart-count">0</span>
             </div>
         </div>
     </nav>
@@ -104,13 +105,20 @@ $conn->close();
                         <p>Check back soon for new arrivals!</p>
                     </div>
                 <?php else: ?>
+                    <!-- Original items -->
                     <?php foreach ($featured_books as $book): ?>
+                        <?php
+                        $image_src = $book['image'];
+                        if (!filter_var($book['image'], FILTER_VALIDATE_URL)) {
+                            $image_src = "admin/uploads/books/" . basename($book['image']);
+                        }
+                        ?>
                         <div class="item-card" data-category="books">
                             <div class="item-image-container">
-                                <img src="<?php echo htmlspecialchars($book['image']); ?>" 
+                                <img src="<?php echo htmlspecialchars($image_src); ?>" 
                                      alt="<?php echo htmlspecialchars($book['title']); ?>" 
                                      class="item-image"
-                                     onerror="this.src='https://via.placeholder.com/280x200/333333/ffffff?text=No+Image'">
+                                     onerror="this.onerror=null; this.src='placeholder.jpg';">
                                 <div class="featured-badge">
                                     <i class="fas fa-star"></i> Featured
                                 </div>
@@ -121,49 +129,68 @@ $conn->close();
                                 <p class="item-author"><?php echo htmlspecialchars($book['author']); ?></p>
                                 
                                 <div class="item-meta">
-                                    <div class="item-price">$<?php echo number_format($book['price'], 2); ?></div>
+                                    <div class="item-price">Ksh<?php echo number_format($book['price'], 2); ?></div>
+                                    <div class="item-category">
+                                        <i class="fas fa-book"></i>
+                                        Book
+                                    </div>
+                    </div>
+                                
+                                <?php if (!empty($book['description'])): ?>
+                                    <p class="item-description"><?php echo htmlspecialchars(substr($book['description'], 0, 80)) . (strlen($book['description']) > 80 ? '...' : ''); ?></p>
+                                <?php endif; ?>
+                            
+                                <button class="add-to-cart-btn" 
+                                        data-id="<?php echo $book['id']; ?>"
+                                        data-title="<?php echo htmlspecialchars($book['title']); ?>"
+                                        data-price="<?php echo $book['price']; ?>"
+                                        data-image="<?php echo htmlspecialchars($image_src); ?>"
+                                        data-category="books">
+                                    <i class="fas fa-cart-plus"></i> Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                    
+                    <!-- Duplicated items -->
+                    <?php foreach ($featured_books as $book): ?>
+                        <?php
+                        $image_src = $book['image'];
+                        if (!filter_var($book['image'], FILTER_VALIDATE_URL)) {
+                            $image_src = "admin/uploads/books/" . basename($book['image']);
+                        }
+                        ?>
+                        <div class="item-card" data-category="books">
+                            <div class="item-image-container">
+                                <img src="<?php echo htmlspecialchars($image_src); ?>" 
+                                     alt="<?php echo htmlspecialchars($book['title']); ?>" 
+                                     class="item-image"
+                                     onerror="this.onerror=null; this.src='placeholder.jpg';">
+                                <div class="featured-badge">
+                                    <i class="fas fa-star"></i> Featured
+                                </div>
+                            </div>
+                            
+                            <div class="item-content">
+                                <h3 class="item-title"><?php echo htmlspecialchars($book['title']); ?></h3>
+                                <p class="item-author"><?php echo htmlspecialchars($book['author']); ?></p>
+                                
+                                <div class="item-meta">
+                                    <div class="item-price">Ksh<?php echo number_format($book['price'], 2); ?></div>
                                     <div class="item-category">
                                         <i class="fas fa-book"></i>
                                         Book
                                     </div>
                                 </div>
                                 
-                                <?php if (isset($book['rating']) && $book['rating'] > 0): ?>
-                                    <div class="item-rating">
-                                        <?php
-                                        $rating = floatval($book['rating']);
-                                        $fullStars = floor($rating);
-                                        $halfStar = $rating - $fullStars >= 0.5;
-                                        
-                                        for ($i = 0; $i < $fullStars; $i++): ?>
-                                            <i class="fas fa-star"></i>
-                                        <?php endfor;
-                                        
-                                        if ($halfStar): ?>
-                                            <i class="fas fa-star-half-alt"></i>
-                                        <?php endif;
-                                        
-                                        $emptyStars = 5 - $fullStars - ($halfStar ? 1 : 0);
-                                        for ($i = 0; $i < $emptyStars; $i++): ?>
-                                            <i class="far fa-star"></i>
-                                        <?php endfor; ?>
-                                        <span class="rating-value"><?php echo number_format($rating, 1); ?></span>
-                                    </div>
-                                <?php endif; ?>
-                                
                                 <?php if (!empty($book['description'])): ?>
                                     <p class="item-description"><?php echo htmlspecialchars(substr($book['description'], 0, 80)) . (strlen($book['description']) > 80 ? '...' : ''); ?></p>
                                 <?php endif; ?>
-                                
-                                <div class="item-stock">
-                                    <span class="in-stock"><i class="fas fa-check-circle"></i> In Stock (<?php echo $book['quantity']; ?>)</span>
-                                </div>
-                                
                                 <button class="add-to-cart-btn" 
                                         data-id="<?php echo $book['id']; ?>"
                                         data-title="<?php echo htmlspecialchars($book['title']); ?>"
                                         data-price="<?php echo $book['price']; ?>"
-                                        data-image="<?php echo htmlspecialchars($book['image']); ?>"
+                                        data-image="<?php echo htmlspecialchars($image_src); ?>"
                                         data-category="books">
                                     <i class="fas fa-cart-plus"></i> Add to Cart
                                 </button>
@@ -188,13 +215,20 @@ $conn->close();
                         <p>Check back soon for new arrivals!</p>
                     </div>
                 <?php else: ?>
+                    <!-- Original items -->
                     <?php foreach ($featured_stationery as $item): ?>
+                        <?php
+                        $image_src = $item['image'];
+                        if (!filter_var($item['image'], FILTER_VALIDATE_URL)) {
+                            $image_src = "admin/uploads/stationery/" . basename($item['image']);
+                        }
+                        ?>
                         <div class="item-card" data-category="stationery">
                             <div class="item-image-container">
-                                <img src="<?php echo htmlspecialchars($item['image']); ?>" 
+                                <img src="<?php echo htmlspecialchars($image_src); ?>" 
                                      alt="<?php echo htmlspecialchars($item['title']); ?>" 
                                      class="item-image"
-                                     onerror="this.src='https://via.placeholder.com/280x200/333333/ffffff?text=No+Image'">
+                                     onerror="this.onerror=null; this.src='placeholder.jpg';">
                                 <div class="featured-badge">
                                     <i class="fas fa-star"></i> Featured
                                 </div>
@@ -205,26 +239,62 @@ $conn->close();
                                 <p class="item-author">KiddleBookshop</p>
                                 
                                 <div class="item-meta">
-                                    <div class="item-price">$<?php echo number_format($item['price'], 2); ?></div>
-                                    <div class="item-category">
-                                        <i class="fas fa-pen"></i>
-                                        Stationery
-                                    </div>
+                                    <div class="item-price">Ksh<?php echo number_format($item['price'], 2); ?></div>
                                 </div>
                                 
                                 <?php if (!empty($item['description'])): ?>
                                     <p class="item-description"><?php echo htmlspecialchars(substr($item['description'], 0, 80)) . (strlen($item['description']) > 80 ? '...' : ''); ?></p>
                                 <?php endif; ?>
                                 
-                                <div class="item-stock">
-                                    <span class="in-stock"><i class="fas fa-check-circle"></i> In Stock (<?php echo $item['quantity']; ?>)</span>
-                                </div>
-                                
                                 <button class="add-to-cart-btn" 
                                         data-id="<?php echo $item['id']; ?>"
                                         data-title="<?php echo htmlspecialchars($item['title']); ?>"
                                         data-price="<?php echo $item['price']; ?>"
-                                        data-image="<?php echo htmlspecialchars($item['image']); ?>"
+                                        data-image="<?php echo htmlspecialchars($image_src); ?>"
+                                        data-category="stationery">
+                                    <i class="fas fa-cart-plus"></i> Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                    
+                    <!-- Duplicated items -->
+                    <?php foreach ($featured_stationery as $item): ?>
+                        <?php
+                        $image_src = $item['image'];
+                        if (!filter_var($item['image'], FILTER_VALIDATE_URL)) {
+                            $image_src = "admin/uploads/stationery/" . basename($item['image']);
+                        }
+                        ?>
+                        <div class="item-card" data-category="stationery">
+                            <div class="item-image-container">
+                                <img src="<?php echo htmlspecialchars($image_src); ?>" 
+                                     alt="<?php echo htmlspecialchars($item['title']); ?>" 
+                                     class="item-image"
+                                     onerror="this.onerror=null; this.src='placeholder.jpg';">
+                                <div class="featured-badge">
+                                    <i class="fas fa-star"></i> Featured
+                                </div>
+                            </div>
+                            
+                            <div class="item-content">
+                                <h3 class="item-title"><?php echo htmlspecialchars($item['title']); ?></h3>
+                                <p class="item-author">KiddleBookshop</p>
+                                
+                                <div class="item-meta">
+                                    <div class="item-price">Ksh<?php echo number_format($item['price'], 2); ?></div>
+                                </div>
+                                
+                                <?php if (!empty($item['description'])): ?>
+                                    <p class="item-description"><?php echo htmlspecialchars(substr($item['description'], 0, 80)) . (strlen($item['description']) > 80 ? '...' : ''); ?></p>
+                                <?php endif; ?>
+                                
+                             
+                                <button class="add-to-cart-btn" 
+                                        data-id="<?php echo $item['id']; ?>"
+                                        data-title="<?php echo htmlspecialchars($item['title']); ?>"
+                                        data-price="<?php echo $item['price']; ?>"
+                                        data-image="<?php echo htmlspecialchars($image_src); ?>"
                                         data-category="stationery">
                                     <i class="fas fa-cart-plus"></i> Add to Cart
                                 </button>
@@ -286,15 +356,16 @@ $conn->close();
                 <div id="cart-items"></div>
             </div>
             <div class="cart-footer">
-                <div id="cart-total" class="cart-total">Total: $0.00</div>
+                <div id="cart-total" class="cart-total">Total: Ksh0.00</div>
                 <button class="checkout-btn" onclick="redirectToCheckout()">
                     <i class="fas fa-credit-card"></i> Checkout
                 </button>
             </div>
         </div>
     </div>
-<!-- Footer -->
-<footer class="footer">
+
+    <!-- Footer -->
+    <footer class="footer">
         <div class="footer-content">
             <div class="footer-logo">KiddleBookshop</div>
             <div class="footer-links">
@@ -306,6 +377,7 @@ $conn->close();
             <p class="footer-text">© 2023 KiddleBookshop - Your Learning Companion</p>
         </div>
     </footer>
+
     <script src="script.js"></script>
 </body>
 </html>

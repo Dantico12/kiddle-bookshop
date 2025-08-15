@@ -1,4 +1,3 @@
-
 <?php
 require_once 'config/database.php';
 checkAdminLogin();
@@ -254,10 +253,20 @@ try {
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="book.php" class="nav-link">
+                        <i class="fas fa-credit-card"></i> Books
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="stationery.php" class="nav-link">
+                        <i class="fas fa-credit-card"></i> Stationery
+                    </a>
+                <li class="nav-item">
                     <a href="transactions.php" class="nav-link">
                         <i class="fas fa-credit-card"></i> Transactions
                     </a>
                 </li>
+
                 <li class="nav-item">
                     <a href="logout.php" class="nav-link">
                         <i class="fas fa-sign-out-alt"></i> Logout
@@ -287,43 +296,6 @@ try {
                 </div>
             <?php endif; ?>
 
-            <!-- Edit Admin Form (hidden by default) -->
-            <div id="editAdminForm" style="display: none;">
-                <div class="form-container">
-                    <h3>Edit Admin</h3>
-                    <form method="POST" id="editForm">
-                        <input type="hidden" name="action" value="edit_admin">
-                        <input type="hidden" name="admin_id" id="edit_admin_id">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="edit_full_name">Full Name *</label>
-                                <input type="text" id="edit_full_name" name="full_name" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="edit_username">Username *</label>
-                                <input type="text" id="edit_username" name="username" class="form-control" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="edit_email">Email *</label>
-                                <input type="email" id="edit_email" name="email" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="edit_password">New Password (leave blank to keep current)</label>
-                                <input type="password" id="edit_password" name="password" class="form-control">
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-save"></i> Update Admin
-                        </button>
-                        <button type="button" onclick="toggleEditForm()" class="btn btn-danger">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                    </form>
-                </div>
-            </div>
-
             <!-- Admins List -->
             <div class="table-container">
                 <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
@@ -350,7 +322,7 @@ try {
                                     <td><?= htmlspecialchars($admin['email']) ?></td>
                                     <td><?= date('M j, Y', strtotime($admin['created_at'])) ?></td>
                                     <td>
-                                        <button onclick="editAdmin(<?= $admin['id'] ?>, '<?= htmlspecialchars($admin['full_name']) ?>', '<?= htmlspecialchars($admin['username']) ?>', '<?= htmlspecialchars($admin['email']) ?>')" class="btn btn-sm" style="background: linear-gradient(45deg, #00bcd4, #0097a7); color: white; margin-right: 0.5rem;">
+                                        <button onclick="openEditModal(<?= $admin['id'] ?>, '<?= htmlspecialchars($admin['full_name']) ?>', '<?= htmlspecialchars($admin['username']) ?>', '<?= htmlspecialchars($admin['email']) ?>')" class="btn btn-sm" style="background: linear-gradient(45deg, #00bcd4, #0097a7); color: white; margin-right: 0.5rem;">
                                             <i class="fas fa-edit"></i> Edit
                                         </button>
                                         <?php if ($admin['id'] != $_SESSION['admin_id']): ?>
@@ -414,34 +386,48 @@ try {
         </div>
     </div>
 
+    <!-- Edit Admin Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Admin</h2>
+                <button class="close-btn" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form method="POST">
+                <input type="hidden" name="action" value="edit_admin">
+                <input type="hidden" name="admin_id" id="edit_admin_id">
+                <div class="form-group">
+                    <label for="edit_full_name">Full Name *</label>
+                    <input type="text" id="edit_full_name" name="full_name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_username">Username *</label>
+                    <input type="text" id="edit_username" name="username" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_email">Email *</label>
+                    <input type="email" id="edit_email" name="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_password">New Password (leave blank to keep current)</label>
+                    <input type="password" id="edit_password" name="password" class="form-control">
+                </div>
+                <div class="button-group">
+                    <button type="button" onclick="closeEditModal()" class="btn btn-danger">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Update Admin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        function toggleEditForm() {
-            const form = document.getElementById('editAdminForm');
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
-        }
-
-        function editAdmin(id, fullName, username, email) {
-            document.getElementById('edit_admin_id').value = id;
-            document.getElementById('edit_full_name').value = fullName;
-            document.getElementById('edit_username').value = username;
-            document.getElementById('edit_email').value = email;
-            document.getElementById('edit_password').value = '';
-            toggleEditForm();
-        }
-
-        function deleteAdmin(id) {
-            if (confirm('Are you sure you want to delete this admin? This action cannot be undone.')) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action" value="delete_admin">
-                    <input type="hidden" name="admin_id" value="${id}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
-
         function openAddModal() {
             const modal = document.getElementById('addModal');
             modal.classList.add('show');
@@ -457,17 +443,55 @@ try {
             document.querySelector('#addModal form').reset();
         }
 
-        // Close modal on overlay click
-        document.getElementById('addModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeAddModal();
+        function openEditModal(id, fullName, username, email) {
+            document.getElementById('edit_admin_id').value = id;
+            document.getElementById('edit_full_name').value = fullName;
+            document.getElementById('edit_username').value = username;
+            document.getElementById('edit_email').value = email;
+            document.getElementById('edit_password').value = '';
+            
+            const modal = document.getElementById('editModal');
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editModal');
+            modal.classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+
+        function deleteAdmin(id) {
+            if (confirm('Are you sure you want to delete this admin? This action cannot be undone.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="delete_admin">
+                    <input type="hidden" name="admin_id" value="${id}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
             }
+        }
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    if (this.id === 'addModal') {
+                        closeAddModal();
+                    } else if (this.id === 'editModal') {
+                        closeEditModal();
+                    }
+                }
+            });
         });
 
         // Close modal on Escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeAddModal();
+                closeEditModal();
             }
         });
     </script>

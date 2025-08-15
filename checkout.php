@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,17 +16,18 @@
                 <img src="kiddle.jpeg" alt="KiddleBookshop Logo" class="logo-image">
                 <span class="logo-text">KiddleBookshop</span>
             </div>
+            <button class="menu-toggle">☰</button>
             <div class="nav-links">
-                <button class="nav-btn" onclick="window.location.href='index.php'">
-                    <i class="fas fa-book"></i> Books
-                </button>
-                <button class="nav-btn" onclick="window.location.href='index.php'">
-                    <i class="fas fa-pen"></i> Stationery
-                </button>
-                <div class="cart-icon" onclick="window.location.href='index.php?cart=true'">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count" id="cart-count">0</span>
-                </div>
+                <a href="index.php" class="nav-btn">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <a href="bookshop.php" class="nav-btn">
+                    <i class="fas fa-store"></i> Shop
+                </a>
+            </div>
+            <div class="cart-icon" onclick="window.location.href='index.php?cart=true'">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="cart-count">0</span>
             </div>
         </div>
     </nav>
@@ -76,15 +76,15 @@
                 <div class="order-total">
                     <div class="total-row">
                         <span>Subtotal:</span>
-                        <span id="subtotal">$0.00</span>
+                        <span id="subtotal">Ksh0.00</span>
                     </div>
                     <div class="total-row">
                         <span>Shipping:</span>
-                        <span id="shipping">$5.99</span>
+                        <span id="shipping">Ksh5.99</span>
                     </div>
                     <div class="total-row grand-total">
                         <span>Total:</span>
-                        <span id="grand-total">$0.00</span>
+                        <span id="grand-total">Ksh0.00</span>
                     </div>
                 </div>
             </div>
