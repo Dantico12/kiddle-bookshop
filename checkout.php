@@ -1,110 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout | KiddleBookshop</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout | Kiddle Bookstore</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-     <!-- Navbar -->
-     <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo">
-                <img src="kiddle.jpeg" alt="KiddleBookshop Logo" class="logo-image">
-                <span class="logo-text">KiddleBookshop</span>
-            </div>
-            <button class="menu-toggle">☰</button>
-            <div class="nav-links">
-                <a href="index.php" class="nav-btn">
-                    <i class="fas fa-home"></i> Home
-                </a>
-                <a href="bookshop.php" class="nav-btn">
-                    <i class="fas fa-store"></i> Shop
-                </a>
-            </div>
-            <div class="cart-icon" onclick="window.location.href='index.php?cart=true'">
-                <i class="fas fa-shopping-cart"></i>
-                <span class="cart-count" id="cart-count">0</span>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Checkout Container -->
-    <div class="checkout-container">
-        <h1 class="checkout-title"><i class="fas fa-credit-card"></i> Checkout</h1>
+  <header class="site-header">
+    <div class="container">
+      <div class="header-content">
+        <a href="index.php" class="logo">
+          <img src="kiddle1.jpeg" alt="Kiddle Bookstore Logo" width="180" height="60">
+        </a>
         
-        <div class="checkout-grid">
-            <!-- Customer Information Form -->
-            <div class="checkout-form">
-                <h2 class="section-title">Customer Information</h2>
-                <form id="checkout-form">
-                    <div class="form-group">
-                        <label for="full-name">Full Name</label>
-                        <input type="text" id="full-name" name="full-name" required placeholder="Enter your full name">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" name="email" required placeholder="Enter your email">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="phone">Phone Number</label>
-                        <input type="tel" id="phone" name="phone" required placeholder="Enter your M-Pesa phone number">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="address">Shipping Address</label>
-                        <textarea id="address" name="address" rows="4" required placeholder="Enter your full shipping address"></textarea>
-                    </div>
-                    
-                    <button type="button" class="pay-mpesa-btn" onclick="payWithMpesa()">
-                        <i class="fas fa-mobile-alt"></i> Pay with M-Pesa
-                    </button>
-                </form>
-            </div>
-            
-            <!-- Order Summary -->
-            <div class="order-summary">
-                <h2 class="section-title">Order Summary</h2>
-                <div class="order-items" id="order-items">
-                    <!-- Cart items will be dynamically populated here -->
-                </div>
-                <div class="order-total">
-                    <div class="total-row">
-                        <span>Subtotal:</span>
-                        <span id="subtotal">Ksh0.00</span>
-                    </div>
-                    <div class="total-row">
-                        <span>Shipping:</span>
-                        <span id="shipping">Ksh5.99</span>
-                    </div>
-                    <div class="total-row grand-total">
-                        <span>Total:</span>
-                        <span id="grand-total">Ksh0.00</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <nav class="main-nav" aria-label="Main navigation">
+          <ul class="nav-list">
+            <li><a href="index.php" class="nav-link">Home</a></li>
+            <li class="cart-icon">
+              <a href="checkout.php" class="nav-link cart-link">
+                <span class="cart-icon-svg" aria-hidden="true">🛒</span>
+                <span class="cart-count" id="cartCount">0</span>
+              </a>
+            </li>
+          </ul>
+          <button class="hamburger" aria-label="Toggle navigation menu">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </nav>
+        
+      <!-- Cart Preview Modal -->
+<div class="cart-preview" id="cartPreview">
+  <div class="cart-preview-content">
+    <div class="cart-preview-header">
+      <h3>Your Cart</h3>
+      <button class="cart-preview-close" id="cartPreviewClose" aria-label="Close cart">×</button>
     </div>
+    <div class="cart-preview-items" id="cartPreviewItems">
+      <!-- Cart items will be populated by JavaScript -->
+    </div>
+    <div class="cart-preview-footer">
+      <div class="cart-preview-total" id="cartPreviewTotal">Total: $0.00</div>
+      <a href="checkout.html" class="cart-preview-checkout">Checkout</a>
+    </div>
+  </div>
+</div>
+    </div>
+  </header>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-logo">KiddleBookshop</div>
-            <div class="footer-links">
-                <a href="#" class="footer-link">About Us</a>
-                <a href="#" class="footer-link">Contact</a>
-                <a href="#" class="footer-link">Privacy Policy</a>
-                <a href="#" class="footer-link">Terms of Service</a>
+  <main>
+    <section class="checkout-section">
+      <div class="container">
+        <h1 class="text-center">Checkout</h1>
+        
+        <div class="checkout-container">
+          <div class="cart-summary">
+            <h2>Your Order</h2>
+            <div id="cartItems">
+              <!-- Cart items will be populated by JavaScript -->
             </div>
-            <p class="footer-text">© 2023 KiddleBookshop - Your Learning Companion</p>
+            <div id="cartTotals" class="cart-totals">
+              <!-- Cart totals will be populated by JavaScript -->
+            </div>
+          </div>
+          
+          <div class="checkout-form">
+            <h2>Billing Details</h2>
+            <form id="checkoutForm">
+              <div class="form-group">
+                <label for="fullName">Full Name *</label>
+                <input type="text" id="fullName" name="fullName" class="form-control" required>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="email">Email *</label>
+                  <input type="email" id="email" name="email" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                  <label for="phone">Phone</label>
+                  <input type="tel" id="phone" name="phone" class="form-control">
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="address">Address *</label>
+                <input type="text" id="address" name="address" class="form-control" required>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="city">City *</label>
+                  <input type="text" id="city" name="city" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                  <label for="zip">ZIP Code *</label>
+                  <input type="text" id="zip" name="zip" class="form-control" required>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="country">Country *</label>
+                <select id="country" name="country" class="form-control" required>
+                  <option value="">Select Country</option>
+                  <option value="US">United States</option>
+                  <option value="CA">Canada</option>
+                  <option value="UK">United Kingdom</option>
+                  <option value="AU">Australia</option>
+                  <option value="DE">Germany</option>
+                  <option value="FR">France</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label>Payment Method</label>
+                <div class="payment-methods">
+                  <p class="mb-0">Payment processing is simulated for this demo.</p>
+                </div>
+              </div>
+              
+              <button type="submit" class="btn">Place Order</button>
+            </form>
+          </div>
         </div>
-    </footer>
+      </div>
+    </section>
+  </main>
 
-    <script src="script.js"></script>
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; 2023 Kiddle Bookstore. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>

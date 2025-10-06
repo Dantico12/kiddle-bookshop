@@ -1,672 +1,620 @@
-// Unified JavaScript for KiddleBookshop
-// This works for both index.php and bookshop.php
+// Enhanced Kiddle Bookstore JavaScript with improved cart management and continuous carousel
 
-// Global variables
-let cart = [];
-let featuredBooksAnimationId;
-let featuredStationeryAnimationId;
+// Sample product data
+const PRODUCTS = [
+  // Books
+  { id: 1, title: "The Midnight Library", category: "books", price: 16.99, description: "Between life and death there is a library, and within that library, the shelves go on forever.", image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=300&fit=crop" },
+  { id: 2, title: "Project Hail Mary", category: "books", price: 18.99, description: "A lone astronaut must save the earth from disaster in this incredible new science-based thriller.", image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop" },
+  { id: 3, title: "Klara and the Sun", category: "books", price: 15.99, description: "From the Nobel Prize winner, a story of an Artificial Friend with outstanding observational qualities.", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop" },
+  { id: 4, title: "The Four Winds", category: "books", price: 17.99, description: "An epic novel of love and heroism and hope, set against the backdrop of the Great Depression.", image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=300&fit=crop" },
+  { id: 5, title: "Malibu Rising", category: "books", price: 16.49, description: "Four famous siblings throw an epic party to celebrate the end of the summer.", image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop" },
+  { id: 6, title: "The Last Thing He Told Me", category: "books", price: 15.49, description: "A gripping mystery about a woman who thinks she's found the love of her life—until he disappears.", image: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=400&h=300&fit=crop" },
+  
+  // Stationery
+  { id: 7, title: "Leather Journal", category: "stationery", price: 24.99, description: "Handcrafted leather journal with 200 pages of premium paper.", image: "https://images.unsplash.com/photo-1544098485-6f56b3b4a1d8?w=400&h=300&fit=crop" },
+  { id: 8, title: "Calligraphy Set", category: "stationery", price: 29.99, description: "Complete calligraphy set with 5 nibs, ink, and practice guide.", image: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=300&fit=crop" },
+  { id: 9, title: "Wooden Pen Set", category: "stationery", price: 34.99, description: "Set of 3 hand-turned wooden pens with refillable ink cartridges.", image: "https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=300&fit=crop" },
+  { id: 10, title: "Watercolor Palette", category: "stationery", price: 19.99, description: "Professional watercolor palette with 24 vibrant colors.", image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=300&fit=crop" },
+  { id: 11, title: "Desk Organizer", category: "stationery", price: 22.99, description: "Minimalist bamboo desk organizer for pens, paper clips, and more.", image: "https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=400&h=300&fit=crop" },
+  { id: 12, title: "Washi Tape Set", category: "stationery", price: 12.99, description: "Set of 12 decorative washi tapes for journaling and crafting.", image: "https://images.unsplash.com/photo-1606762825806-1c0d7e2b5b6e?w=400&h=300&fit=crop" }
+];
 
-// Initialize based on current page
-document.addEventListener('DOMContentLoaded', () => {
-    loadCartFromMemory();
-    updateCartCount();
-    
-    // Initialize mobile menu toggle
-    initMobileMenu();
-    
-    // Initialize page-specific functionality
-    if (document.getElementById('featured-books') || document.getElementById('featured-stationery')) {
-        initHomePage();
-    } else if (document.getElementById('items-container')) {
-        initShopPage();
-    } else if (document.getElementById('checkout-form')) {
-        initCheckoutPage();
+// Cart Management Class
+class CartManager {
+  constructor() {
+    this.storageKey = 'kiddle_cart_v1';
+    this.init();
+  }
+  
+  init() {
+    if (!localStorage.getItem(this.storageKey)) {
+      this.saveCart([]);
     }
-});
-
-// ======================
-// MOBILE MENU FUNCTIONALITY
-// ======================
-
-function initMobileMenu() {
-    const menuToggle = document.querySelector('.menu-toggle');
-    const navLinks = document.querySelector('.nav-links');
+  }
+  
+  getCart() {
+    return JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+  }
+  
+  saveCart(cart) {
+    localStorage.setItem(this.storageKey, JSON.stringify(cart));
+  }
+  
+  addItem(productId, quantity = 1) {
+    const cart = this.getCart();
+    const existingItem = cart.find(item => item.id === productId);
     
-    if (menuToggle && navLinks) {
-        menuToggle.addEventListener('click', function() {
-            navLinks.classList.toggle('active');
-            
-            // Update hamburger icon
-            if (navLinks.classList.contains('active')) {
-                menuToggle.innerHTML = '✕'; // Close icon
-            } else {
-                menuToggle.innerHTML = '☰'; // Hamburger icon
-            }
+    if (existingItem) {
+      existingItem.quantity += quantity;
+    } else {
+      const product = PRODUCTS.find(p => p.id === productId);
+      if (product) {
+        cart.push({
+          id: product.id,
+          title: product.title,
+          price: product.price,
+          image: product.image,
+          quantity: quantity
         });
-        
-        // Close menu when clicking on nav links (mobile)
-        const navButtons = navLinks.querySelectorAll('.nav-btn');
-        navButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (window.innerWidth <= 768) {
-                    navLinks.classList.remove('active');
-                    menuToggle.innerHTML = '☰';
-                }
-            });
-        });
-        
-        // Close menu when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!navLinks.contains(e.target) && !menuToggle.contains(e.target)) {
-                if (navLinks.classList.contains('active')) {
-                    navLinks.classList.remove('active');
-                    menuToggle.innerHTML = '☰';
-                }
-            }
-        });
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            if (window.innerWidth > 768) {
-                navLinks.classList.remove('active');
-                menuToggle.innerHTML = '☰';
-            }
-        });
-    }
-}
-
-// ======================
-// HOMEPAGE FUNCTIONALITY
-// ======================
-
-function initHomePage() {
-    setupHomeEventListeners();
-    
-    // Use IntersectionObserver to start carousels only when visible
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                if (entry.target.id === 'featured-books') {
-                    startFeaturedBooksCarousel();
-                } else if (entry.target.id === 'featured-stationery') {
-                    startFeaturedStationeryCarousel();
-                }
-            } else {
-                if (entry.target.id === 'featured-books') {
-                    stopFeaturedBooksCarousel();
-                } else if (entry.target.id === 'featured-stationery') {
-                    stopFeaturedStationeryCarousel();
-                }
-            }
-        });
-    }, { threshold: 0.1 });
-    
-    const featuredBooks = document.getElementById('featured-books');
-    const featuredStationery = document.getElementById('featured-stationery');
-    
-    if (featuredBooks) observer.observe(featuredBooks);
-    if (featuredStationery) observer.observe(featuredStationery);
-}
-
-function setupHomeEventListeners() {
-    // Add to cart button event delegation for featured items
-    const featuredBooksContainer = document.getElementById('featured-books');
-    const featuredStationeryContainer = document.getElementById('featured-stationery');
-    
-    if (featuredBooksContainer) {
-        featuredBooksContainer.addEventListener('click', (e) => {
-            if (e.target.closest('.add-to-cart-btn')) {
-                const btn = e.target.closest('.add-to-cart-btn');
-                const item = {
-                    id: parseInt(btn.dataset.id),
-                    title: btn.dataset.title,
-                    price: parseFloat(btn.dataset.price),
-                    image: btn.dataset.image,
-                    category: btn.dataset.category
-                };
-                addToCart(item);
-                
-                // Visual feedback
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Added!';
-                btn.disabled = true;
-                btn.classList.add('added');
-                
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    btn.classList.remove('added');
-                }, 1500);
-            }
-        });
+      }
     }
     
-    if (featuredStationeryContainer) {
-        featuredStationeryContainer.addEventListener('click', (e) => {
-            if (e.target.closest('.add-to-cart-btn')) {
-                const btn = e.target.closest('.add-to-cart-btn');
-                const item = {
-                    id: parseInt(btn.dataset.id),
-                    title: btn.dataset.title,
-                    price: parseFloat(btn.dataset.price),
-                    image: btn.dataset.image,
-                    category: btn.dataset.category
-                };
-                addToCart(item);
-                
-                // Visual feedback
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Added!';
-                btn.disabled = true;
-                btn.classList.add('added');
-                
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    btn.classList.remove('added');
-                }, 1500);
-            }
-        });
+    this.saveCart(cart);
+    this.updateUI();
+    showToast('Added to cart!');
+  }
+  
+  removeItem(productId) {
+    let cart = this.getCart();
+    cart = cart.filter(item => item.id !== productId);
+    this.saveCart(cart);
+    this.updateUI();
+    showToast('Item removed from cart');
+  }
+  
+  updateQuantity(productId, newQuantity) {
+    if (newQuantity < 1) {
+      this.removeItem(productId);
+      return;
     }
-}
-
-// Improved Carousel Functions
-function startFeaturedBooksCarousel() {
-    const container = document.getElementById('featured-books');
-    if (!container || container.querySelector('.no-items')) return;
-
-    // Create a track container for better animation performance
-    const track = document.createElement('div');
-    track.className = 'carousel-track';
     
-    // Clone all items and append to track
-    const items = Array.from(container.children);
-    items.forEach(item => track.appendChild(item.cloneNode(true)));
-    
-    // Clear container and add track
-    container.innerHTML = '';
-    container.appendChild(track);
-    
-    const itemWidth = container.querySelector('.item-card').offsetWidth;
-    const gap = 20;
-    const itemCount = items.length;
-    const totalWidth = (itemWidth + gap) * itemCount;
-    
-    // Set initial position
-    let position = 0;
-    const speed = 1.5; // Increased speed
-    
-    // Use requestAnimationFrame for smoother animation
-    let lastTimestamp = 0;
-    
-    const animate = (timestamp) => {
-        if (!lastTimestamp) lastTimestamp = timestamp;
-        const delta = timestamp - lastTimestamp;
-        lastTimestamp = timestamp;
-        
-        position += (speed * delta) / 16; // Normalize speed
-        
-        // Reset position when scrolled one full width
-        if (position >= totalWidth) {
-            position = 0;
-        }
-        
-        track.style.transform = `translateX(-${position}px)`;
-        featuredBooksAnimationId = requestAnimationFrame(animate);
-    };
-    
-    featuredBooksAnimationId = requestAnimationFrame(animate);
-    
-    // Pause on hover
-    container.addEventListener('mouseenter', () => {
-        cancelAnimationFrame(featuredBooksAnimationId);
-    });
-    
-    container.addEventListener('mouseleave', () => {
-        lastTimestamp = 0; // Reset timestamp
-        featuredBooksAnimationId = requestAnimationFrame(animate);
-    });
-}
-
-function stopFeaturedBooksCarousel() {
-    if (featuredBooksAnimationId) {
-        cancelAnimationFrame(featuredBooksAnimationId);
+    const cart = this.getCart();
+    const item = cart.find(item => item.id === productId);
+    if (item) {
+      item.quantity = newQuantity;
+      this.saveCart(cart);
+      this.updateUI();
     }
-}
-
-function startFeaturedStationeryCarousel() {
-    const container = document.getElementById('featured-stationery');
-    if (!container || container.querySelector('.no-items')) return;
-
-    // Create a track container for better animation performance
-    const track = document.createElement('div');
-    track.className = 'carousel-track';
-    
-    // Clone all items and append to track
-    const items = Array.from(container.children);
-    items.forEach(item => track.appendChild(item.cloneNode(true)));
-    
-    // Clear container and add track
-    container.innerHTML = '';
-    container.appendChild(track);
-    
-    const itemWidth = container.querySelector('.item-card').offsetWidth;
-    const gap = 20;
-    const itemCount = items.length;
-    const totalWidth = (itemWidth + gap) * itemCount;
-    
-    // Set initial position
-    let position = 0;
-    const speed = 1.5; // Increased speed
-    
-    // Use requestAnimationFrame for smoother animation
-    let lastTimestamp = 0;
-    
-    const animate = (timestamp) => {
-        if (!lastTimestamp) lastTimestamp = timestamp;
-        const delta = timestamp - lastTimestamp;
-        lastTimestamp = timestamp;
-        
-        position += (speed * delta) / 16; // Normalize speed
-        
-        // Reset position when scrolled one full width
-        if (position >= totalWidth) {
-            position = 0;
-        }
-        
-        track.style.transform = `translateX(-${position}px)`;
-        featuredStationeryAnimationId = requestAnimationFrame(animate);
-    };
-    
-    featuredStationeryAnimationId = requestAnimationFrame(animate);
-    
-    // Pause on hover
-    container.addEventListener('mouseenter', () => {
-        cancelAnimationFrame(featuredStationeryAnimationId);
-    });
-    
-    container.addEventListener('mouseleave', () => {
-        lastTimestamp = 0; // Reset timestamp
-        featuredStationeryAnimationId = requestAnimationFrame(animate);
-    });
-}
-
-function stopFeaturedStationeryCarousel() {
-    if (featuredStationeryAnimationId) {
-        cancelAnimationFrame(featuredStationeryAnimationId);
+  }
+  
+  getTotalCount() {
+    const cart = this.getCart();
+    return cart.reduce((total, item) => total + item.quantity, 0);
+  }
+  
+  getTotalPrice() {
+    const cart = this.getCart();
+    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  }
+  
+  clearCart() {
+    this.saveCart([]);
+    this.updateUI();
+  }
+  
+  updateUI() {
+    // Update cart count
+    const cartCountElement = document.getElementById('cartCount');
+    if (cartCountElement) {
+      const count = this.getTotalCount();
+      cartCountElement.textContent = count;
+      cartCountElement.style.display = count > 0 ? 'flex' : 'none';
     }
-}
-
-// ======================
-// SHOP PAGE FUNCTIONALITY
-// ======================
-
-function initShopPage() {
-    setupShopEventListeners();
-}
-
-function setupShopEventListeners() {
-    // Add to cart button event delegation
-    const itemsContainer = document.getElementById('items-container');
-    if (itemsContainer) {
-        itemsContainer.addEventListener('click', (e) => {
-            if (e.target.closest('.add-to-cart-btn') && !e.target.closest('.add-to-cart-btn').disabled) {
-                const btn = e.target.closest('.add-to-cart-btn');
-                const item = {
-                    id: parseInt(btn.dataset.id),
-                    title: btn.dataset.title,
-                    price: parseFloat(btn.dataset.price),
-                    image: btn.dataset.image,
-                    category: btn.dataset.category
-                };
-                
-                addToCart(item);
-                
-                // Visual feedback
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Added!';
-                btn.disabled = true;
-                btn.classList.add('added');
-                
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    btn.classList.remove('added');
-                }, 1500);
-            }
-        });
-    }
-
-    // Search form submission
-    const searchForm = document.querySelector('.search-form');
-    if (searchForm) {
-        const searchInput = searchForm.querySelector('input[name="search"]');
-        const hiddenSearchInput = searchForm.querySelector('input[type="hidden"][name="search"]');
-        
-        searchForm.addEventListener('submit', (e) => {
-            if (hiddenSearchInput) {
-                hiddenSearchInput.value = searchInput.value;
-            }
-        });
-    }
-}
-
-// ======================
-// CHECKOUT PAGE FUNCTIONALITY
-// ======================
-
-function initCheckoutPage() {
-    updateOrderSummary();
     
-    // Setup M-Pesa payment button
-    const mpesaBtn = document.querySelector('.pay-mpesa-btn');
-    if (mpesaBtn) {
-        mpesaBtn.addEventListener('click', payWithMpesa);
+    // Update cart preview if open
+    if (document.getElementById('cartPreview')?.classList.contains('active')) {
+      this.updateCartPreview();
     }
-}
-
-function updateOrderSummary() {
-    const orderItems = document.getElementById('order-items');
-    const subtotalEl = document.getElementById('subtotal');
-    const grandTotalEl = document.getElementById('grand-total');
     
-    if (!orderItems || !subtotalEl || !grandTotalEl) return;
+    // Update checkout page if on checkout
+    if (document.getElementById('cartItems')) {
+      this.renderCheckoutCart();
+    }
+  }
+  
+  updateCartPreview() {
+    const itemsContainer = document.getElementById('cartPreviewItems');
+    const totalContainer = document.getElementById('cartPreviewTotal');
     
-    orderItems.innerHTML = '';
+    if (!itemsContainer || !totalContainer) return;
+    
+    const cart = this.getCart();
     
     if (cart.length === 0) {
-        orderItems.innerHTML = '<p class="no-items">Your cart is empty</p>';
-        subtotalEl.textContent = 'Ksh0.00';
-        grandTotalEl.textContent = 'Ksh0.00';
-        return;
+      itemsContainer.innerHTML = '<div class="cart-preview-empty">Your cart is empty</div>';
+      totalContainer.textContent = 'Total: $0.00';
+      return;
     }
+    
+    let itemsHtml = '';
+    
+    cart.forEach(item => {
+      const itemTotal = item.price * item.quantity;
+      
+      itemsHtml += `
+        <div class="cart-preview-item">
+          <div class="cart-preview-item-image">
+            <img src="${item.image}" alt="${item.title}" loading="lazy">
+          </div>
+          <div class="cart-preview-item-details">
+            <div class="cart-preview-item-title">${item.title}</div>
+            <div class="cart-preview-item-price">$${item.price.toFixed(2)} × ${item.quantity}</div>
+            <div class="cart-preview-quantity">
+              <button class="cart-preview-quantity-btn" data-action="decrease" data-id="${item.id}">-</button>
+              <input type="number" class="cart-preview-quantity-input" value="${item.quantity}" min="1" data-id="${item.id}" readonly>
+              <button class="cart-preview-quantity-btn" data-action="increase" data-id="${item.id}">+</button>
+              <button class="cart-preview-remove" data-id="${item.id}">Remove</button>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    itemsContainer.innerHTML = itemsHtml;
+    totalContainer.textContent = `Total: $${this.getTotalPrice().toFixed(2)}`;
+    
+    // Add event listeners
+    this.addCartPreviewEventListeners();
+  }
+  
+  addCartPreviewEventListeners() {
+    document.querySelectorAll('.cart-preview-quantity-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const action = e.target.dataset.action;
+        const productId = parseInt(e.target.dataset.id);
+        
+        if (action === 'increase') {
+          this.addItem(productId, 1);
+        } else if (action === 'decrease') {
+          const cart = this.getCart();
+          const item = cart.find(item => item.id === productId);
+          if (item && item.quantity > 1) {
+            this.updateQuantity(productId, item.quantity - 1);
+          } else {
+            this.removeItem(productId);
+          }
+        }
+      });
+    });
+    
+    document.querySelectorAll('.cart-preview-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const productId = parseInt(e.target.dataset.id);
+        this.removeItem(productId);
+      });
+    });
+  }
+  
+  renderCheckoutCart() {
+    const cartItemsContainer = document.getElementById('cartItems');
+    const cartTotalsContainer = document.getElementById('cartTotals');
+    
+    if (!cartItemsContainer || !cartTotalsContainer) return;
+    
+    const cart = this.getCart();
+    
+    if (cart.length === 0) {
+      cartItemsContainer.innerHTML = '<p class="text-center">Your cart is empty.</p>';
+      cartTotalsContainer.innerHTML = '';
+      return;
+    }
+    
+    cartItemsContainer.innerHTML = '';
     
     let subtotal = 0;
     
     cart.forEach(item => {
-        const itemTotal = item.price * item.quantity;
-        subtotal += itemTotal;
-        
-        const orderItem = document.createElement('div');
-        orderItem.classList.add('order-item');
-        
-        orderItem.innerHTML = `
-            <div class="order-item-name">${item.title}</div>
-            <div class="order-item-quantity">×${item.quantity}</div>
-            <div class="order-item-price">Ksh${itemTotal.toFixed(2)}</div>
-        `;
-        
-        orderItems.appendChild(orderItem);
+      const itemTotal = item.price * item.quantity;
+      subtotal += itemTotal;
+      
+      const cartItem = document.createElement('div');
+      cartItem.className = 'cart-item';
+      cartItem.innerHTML = `
+        <div class="cart-item-image">
+          <img src="${item.image}" alt="${item.title}" loading="lazy">
+        </div>
+        <div class="cart-item-details">
+          <div class="cart-item-title">${item.title}</div>
+          <div class="cart-item-price">$${item.price.toFixed(2)} × ${item.quantity}</div>
+          <div class="cart-item-actions">
+            <div class="quantity-control">
+              <button class="quantity-btn">-</button>
+              <input type="number" class="quantity-input" value="${item.quantity}" min="1" data-id="${item.id}">
+              <button class="quantity-btn">+</button>
+            </div>
+            <button class="remove-item" data-id="${item.id}">Remove</button>
+          </div>
+        </div>
+        <div class="cart-item-total">$${itemTotal.toFixed(2)}</div>
+      `;
+      cartItemsContainer.appendChild(cartItem);
     });
     
-    const shipping = 5.99;
-    const total = subtotal + shipping;
+    // Calculate totals
+    const taxRate = 0.08; // 8% tax
+    const shipping = 4.99;
+    const tax = subtotal * taxRate;
+    const total = subtotal + tax + shipping;
     
-    subtotalEl.textContent = `Ksh${subtotal.toFixed(2)}`;
-    grandTotalEl.textContent = `Ksh${total.toFixed(2)}`;
-}
-
-function payWithMpesa() {
-    const form = document.getElementById('checkout-form');
-    if (!form) return;
-    
-    // Validate form
-    const fullName = document.getElementById('full-name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-    const address = document.getElementById('address').value.trim();
-    
-    if (!fullName || !email || !phone || !address) {
-        showNotification('Please fill in all required fields', 'warning');
-        return;
-    }
-    
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showNotification('Please enter a valid email address', 'warning');
-        return;
-    }
-    
-    // Validate phone number (basic validation)
-    const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,}$/;
-    if (!phoneRegex.test(phone)) {
-        showNotification('Please enter a valid phone number', 'warning');
-        return;
-    }
-    
-    if (cart.length === 0) {
-        showNotification('Your cart is empty!', 'warning');
-        return;
-    }
-    
-    const totalText = document.getElementById('grand-total').textContent;
-    const total = parseFloat(totalText.replace('Ksh', ''));
-    
-    // Create order data
-    const orderData = {
-        customer: {
-            name: fullName,
-            email: email,
-            phone: phone,
-            address: address,
-            paymentMethod: 'M-Pesa'
-        },
-        items: cart,
-        total: total,
-        timestamp: new Date().toISOString()
-    };
-    
-    // Simulate M-Pesa payment process
-    const mpesaBtn = document.querySelector('.pay-mpesa-btn');
-    const originalText = mpesaBtn.innerHTML;
-    
-    mpesaBtn.disabled = true;
-    mpesaBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing M-Pesa Payment...';
-    
-    // Simulate payment processing delay
-    setTimeout(() => {
-        showNotification(`M-Pesa payment initiated! Amount: Ksh${total.toFixed(2)} to phone: ${phone}`, 'success');
-        
-        // Reset button
-        mpesaBtn.disabled = false;
-        mpesaBtn.innerHTML = originalText;
-        
-        setTimeout(() => {
-            if (confirm('Payment successful! Would you like to view your order confirmation?')) {
-                cart = [];
-                saveCartToMemory();
-                showNotification('Thank you for your purchase! Your order has been confirmed and will be processed shortly.', 'success');
-            }
-        }, 2000);
-    }, 3000);
-}
-
-// ======================
-// SHARED CART FUNCTIONS
-// ======================
-
-function addToCart(item) {
-    const existingItem = cart.find(cartItem => cartItem.id === item.id);
-    
-    if (existingItem) {
-        existingItem.quantity++;
-    } else {
-        cart.push({
-            id: item.id,
-            title: item.title,
-            price: item.price,
-            quantity: 1,
-            category: item.category
-        });
-    }
-    
-    updateCartCount();
-    saveCartToMemory();
-    showNotification(`${item.title} added to cart!`, 'success');
-}
-
-function updateCartCount() {
-    const cartCount = document.getElementById('cart-count');
-    if (cartCount) {
-        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-        cartCount.textContent = totalItems;
-        cartCount.classList.add('updated');
-        setTimeout(() => cartCount.classList.remove('updated'), 300);
-    }
-}
-
-function toggleCart() {
-    const cartModal = document.getElementById('cart-modal');
-    if (cartModal) {
-        const isVisible = cartModal.style.display === 'flex';
-        cartModal.style.display = isVisible ? 'none' : 'flex';
-        
-        if (!isVisible) {
-            updateCartDisplay();
-        }
-        document.body.style.overflow = isVisible ? 'auto' : 'hidden';
-    }
-}
-
-function updateCartDisplay() {
-    const cartItems = document.getElementById('cart-items');
-    if (!cartItems) return;
-    
-    cartItems.innerHTML = '';
-    
-    if (cart.length === 0) {
-        cartItems.innerHTML = `
-            <div class="no-items">
-                <i class="fas fa-shopping-cart"></i>
-                <p>Your cart is empty</p>
-                <small>Add some items to get started!</small>
-            </div>
-        `;
-        const cartTotal = document.getElementById('cart-total');
-        if (cartTotal) cartTotal.textContent = 'Total: Ksh0.00';
-        return;
-    }
-    
-    let total = 0;
-    
-    cart.forEach(item => {
-        const itemTotal = item.price * item.quantity;
-        total += itemTotal;
-        
-        const cartItem = document.createElement('div');
-        cartItem.classList.add('cart-item');
-        
-        cartItem.innerHTML = `
-            <div class="cart-item-info">
-                <div class="cart-item-title">${item.title}</div>
-                <div class="cart-item-price">Ksh${item.price.toFixed(2)} × ${item.quantity}</div>
-                <div class="cart-item-total">Ksh${itemTotal.toFixed(2)}</div>
-            </div>
-            <div class="cart-item-controls">
-                <div class="quantity-controls">
-                    <button class="quantity-btn" onclick="changeQuantity(${item.id}, -1)">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                    <span class="cart-item-quantity">${item.quantity}</span>
-                    <button class="quantity-btn" onclick="changeQuantity(${item.id}, 1)">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                </div>
-                <button class="remove-btn" onclick="removeFromCart(${item.id})" title="Remove item">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        `;
-        
-        cartItems.appendChild(cartItem);
-    });
-    
-    const cartTotal = document.getElementById('cart-total');
-    if (cartTotal) cartTotal.textContent = `Total: Ksh${total.toFixed(2)}`;
-}
-
-function changeQuantity(id, change) {
-    const item = cart.find(item => item.id === id);
-    
-    if (item) {
-        item.quantity += change;
-        
-        if (item.quantity <= 0) {
-            cart = cart.filter(item => item.id !== id);
-        }
-        
-        updateCartCount();
-        updateCartDisplay();
-        saveCartToMemory();
-        
-        if (document.getElementById('checkout-form')) {
-            updateOrderSummary();
-        }
-    }
-}
-
-function removeFromCart(id) {
-    cart = cart.filter(item => item.id !== id);
-    updateCartCount();
-    updateCartDisplay();
-    saveCartToMemory();
-    showNotification('Item removed from cart', 'info');
-}
-
-function saveCartToMemory() {
-    localStorage.setItem('kiddlebookshop_cart', JSON.stringify(cart));
-}
-
-function loadCartFromMemory() {
-    const savedCart = localStorage.getItem('kiddlebookshop_cart');
-    cart = savedCart ? JSON.parse(savedCart) : [];
-}
-
-function redirectToCheckout() {
-    if (cart.length === 0) {
-        showNotification('Your cart is empty!', 'warning');
-        return;
-    }
-    window.location.href = 'checkout.php';
-}
-
-function showNotification(message, type = 'info') {
-    const existingNotifications = document.querySelectorAll('.notification');
-    existingNotifications.forEach(notification => notification.remove());
-    
-    const notification = document.createElement('div');
-    notification.classList.add('notification', `notification-${type}`);
-    
-    const icon = type === 'success' ? 'check-circle' : 
-                 type === 'warning' ? 'exclamation-triangle' : 
-                 type === 'error' ? 'times-circle' : 'info-circle';
-    
-    notification.innerHTML = `
-        <i class="fas fa-${icon}"></i>
-        <span>${message}</span>
+    cartTotalsContainer.innerHTML = `
+      <div class="cart-total-row">
+        <span>Subtotal:</span>
+        <span>$${subtotal.toFixed(2)}</span>
+      </div>
+      <div class="cart-total-row">
+        <span>Tax (8%):</span>
+        <span>$${tax.toFixed(2)}</span>
+      </div>
+      <div class="cart-total-row">
+        <span>Shipping:</span>
+        <span>$${shipping.toFixed(2)}</span>
+      </div>
+      <div class="cart-total-row cart-total">
+        <span>Total:</span>
+        <span>$${total.toFixed(2)}</span>
+      </div>
     `;
     
-    document.body.appendChild(notification);
+    // Add event listeners for checkout page quantity controls
+    this.addCheckoutEventListeners();
+  }
+  
+  addCheckoutEventListeners() {
+    document.querySelectorAll('.quantity-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const action = e.target.textContent === '+' ? 'increase' : 'decrease';
+        const input = e.target.parentElement.querySelector('.quantity-input');
+        const productId = parseInt(input.dataset.id);
+        let value = parseInt(input.value);
+        
+        if (action === 'increase') {
+          value++;
+        } else if (action === 'decrease' && value > 1) {
+          value--;
+        }
+        
+        input.value = value;
+        this.updateQuantity(productId, value);
+      });
+    });
     
-    setTimeout(() => notification.classList.add('show'), 100);
-    
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    document.querySelectorAll('.remove-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const productId = parseInt(e.target.dataset.id);
+        this.removeItem(productId);
+      });
+    });
+  }
 }
 
-// Close cart when clicking outside
-document.addEventListener('click', (e) => {
-    const cartModal = document.getElementById('cart-modal');
-    if (cartModal && cartModal.style.display === 'flex' && e.target === cartModal) {
-        toggleCart();
-    }
-});
+// Initialize cart manager
+const cartManager = new CartManager();
 
-// Make functions available globally
-window.toggleCart = toggleCart;
-window.changeQuantity = changeQuantity;
-window.removeFromCart = removeFromCart;
-window.redirectToCheckout = redirectToCheckout;
+// Toast Notification
+function showToast(message) {
+  const existingToast = document.querySelector('.toast');
+  if (existingToast) {
+    existingToast.remove();
+  }
+  
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  
+  document.body.appendChild(toast);
+  
+  void toast.offsetWidth; // Trigger reflow
+  toast.classList.add('show');
+  
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Cart Preview Functions
+function toggleCartPreview() {
+  const cartPreview = document.getElementById('cartPreview');
+  if (cartPreview.classList.contains('active')) {
+    hideCartPreview();
+  } else {
+    showCartPreview();
+  }
+}
+
+function showCartPreview() {
+  const cartPreview = document.getElementById('cartPreview');
+  cartManager.updateCartPreview();
+  cartPreview.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function hideCartPreview() {
+  const cartPreview = document.getElementById('cartPreview');
+  cartPreview.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// Continuous Carousel Implementation
+function initCarousel(containerId, products) {
+  const container = document.getElementById(containerId);
+  if (!container || !products.length) return;
+
+  // Create enough duplicates to ensure smooth infinite scrolling
+  const duplicatedProducts = [...products, ...products, ...products];
+  
+  // Generate card HTML
+  const cardsHtml = duplicatedProducts.map(product => `
+    <div class="carousel-card">
+      <div class="carousel-card-image">
+        <img src="${product.image}" alt="${product.title}" loading="lazy">
+      </div>
+      <div class="carousel-card-info">
+        <h3>${product.title}</h3>
+        <p>${product.description}</p>
+        <div class="carousel-card-price">$${product.price.toFixed(2)}</div>
+        <button class="btn add-to-cart" data-id="${product.id}">Add to Cart</button>
+      </div>
+    </div>
+  `).join('');
+
+  container.innerHTML = cardsHtml;
+
+  // Add event listeners for add to cart buttons
+  container.querySelectorAll('.add-to-cart').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const productId = parseInt(btn.dataset.id);
+      cartManager.addItem(productId);
+    });
+  });
+}
+
+// Products Page Functions
+function initProductsPage() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const activeTab = urlParams.get('tab') || 'all';
+  
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabValue = tab.dataset.tab;
+      setActiveTab(tabValue);
+      filterProducts(tabValue);
+      updateURL(tabValue);
+    });
+  });
+  
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const searchTerm = searchInput.value.toLowerCase();
+      const activeTab = document.querySelector('.tab.active').dataset.tab;
+      filterProducts(activeTab, searchTerm);
+    });
+  }
+  
+  setActiveTab(activeTab);
+  filterProducts(activeTab);
+
+  function setActiveTab(tabValue) {
+    tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.tab === tabValue));
+  }
+
+  function filterProducts(category, searchTerm = '') {
+    let filteredProducts = category === 'all' ? PRODUCTS : PRODUCTS.filter(p => p.category === category);
+    if (searchTerm) filteredProducts = filteredProducts.filter(p => p.title.toLowerCase().includes(searchTerm) || p.description.toLowerCase().includes(searchTerm));
+    renderProducts(filteredProducts, 1, 8);
+    renderPagination(filteredProducts.length, 1, 8);
+  }
+
+  function renderProducts(products, page, itemsPerPage) {
+    const productsGrid = document.querySelector('.products-grid');
+    if (!productsGrid) return;
+
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedProducts = products.slice(startIndex, startIndex + itemsPerPage);
+    productsGrid.innerHTML = paginatedProducts.map(product => `
+      <div class="product-card">
+        <div class="product-image">
+          <img src="${product.image}" alt="${product.title}" loading="lazy">
+        </div>
+        <div class="product-info">
+          <h3>${product.title}</h3>
+          <p>${product.description}</p>
+          <div class="product-price">$${product.price.toFixed(2)}</div>
+          <button class="btn add-to-cart" data-id="${product.id}">Add to Cart</button>
+        </div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.add-to-cart').forEach(btn => btn.addEventListener('click', () => cartManager.addItem(parseInt(btn.dataset.id))));
+  }
+
+  function renderPagination(totalItems, currentPage, itemsPerPage) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const paginationContainer = document.querySelector('.pagination');
+    if (!paginationContainer) return;
+
+    paginationContainer.innerHTML = `
+      <button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} data-action="prev">&laquo;</button>
+      ${Array.from({ length: totalPages }, (_, i) => `
+        <button class="page-btn ${i + 1 === currentPage ? 'active' : ''}">${i + 1}</button>
+      `).join('')}
+      <button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} data-action="next">&raquo;</button>
+    `;
+
+    paginationContainer.querySelectorAll('.page-btn').forEach(btn => btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      const page = action ? (action === 'next' ? currentPage + 1 : currentPage - 1) : parseInt(btn.textContent);
+      if (page !== currentPage && page >= 1 && page <= totalPages) {
+        currentPage = page;
+        const activeTab = document.querySelector('.tab.active').dataset.tab;
+        const searchTerm = searchInput?.value.toLowerCase() || '';
+        filterProducts(activeTab, searchTerm);
+        updateURL(activeTab, page);
+      }
+    }));
+  }
+
+  function updateURL(tab, page = 1) {
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tab);
+    if (page > 1) url.searchParams.set('page', page);
+    else url.searchParams.delete('page');
+    window.history.replaceState({}, '', url);
+  }
+}
+
+// Checkout Page Functions
+function initCheckoutPage() {
+  cartManager.renderCheckoutCart();
+  const checkoutForm = document.getElementById('checkoutForm');
+  if (checkoutForm) {
+    checkoutForm.addEventListener('submit', handleFormSubmit);
+  }
+}
+
+function handleFormSubmit(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData);
+  
+  const requiredFields = ['fullName', 'email', 'address', 'city', 'zip', 'country'];
+  let isValid = true;
+  
+  document.querySelectorAll('.error').forEach(el => el.remove());
+  
+  requiredFields.forEach(field => {
+    if (!data[field]) {
+      showError(e.target.querySelector(`[name="${field}"]`), 'This field is required');
+      isValid = false;
+    }
+  });
+  
+  if (data.email && !isValidEmail(data.email)) {
+    showError(e.target.querySelector('[name="email"]'), 'Please enter a valid email');
+    isValid = false;
+  }
+  
+  if (data.phone && !isValidPhone(data.phone)) {
+    showError(e.target.querySelector('[name="phone"]'), 'Please enter a valid phone number');
+    isValid = false;
+  }
+  
+  if (isValid) {
+    const orderId = 'ORD-' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    showToast(`Order placed successfully! Order ID: ${orderId}`);
+    cartManager.clearCart();
+    setTimeout(() => window.location.href = 'index.php', 3000);
+  }
+}
+
+function showError(input, message) {
+  const error = document.createElement('div');
+  error.className = 'error';
+  error.style.color = '#e74c3c';
+  error.style.fontSize = '0.875rem';
+  error.style.marginTop = '0.25rem';
+  error.textContent = message;
+  input.parentNode.appendChild(error);
+}
+
+function isValidEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
+function isValidPhone(phone) {
+  const re = /^[\+]?[1-9][\d]{0,15}$/;
+  return re.test(phone.replace(/[\s\-\(\)\.]/g, ''));
+}
+
+// Page Initialization
+function initHomePage() {
+  initCarousel('booksCarousel', PRODUCTS.filter(p => p.category === 'books'));
+  initCarousel('stationeryCarousel', PRODUCTS.filter(p => p.category === 'stationery'));
+}
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', () => {
+  cartManager.updateUI();
+  
+  const hamburger = document.querySelector('.hamburger');
+  const navList = document.querySelector('.nav-list');
+  
+  if (hamburger && navList) {
+    hamburger.addEventListener('click', () => {
+      navList.classList.toggle('active');
+      hamburger.classList.toggle('active');
+    });
+  }
+  
+  const cartPreview = document.getElementById('cartPreview');
+  const cartPreviewClose = document.getElementById('cartPreviewClose');
+  
+  if (cartPreview && cartPreviewClose) {
+    const cartLink = document.querySelector('.cart-link');
+    
+    if (cartLink) {
+      cartLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleCartPreview();
+      });
+    }
+    
+    cartPreviewClose.addEventListener('click', hideCartPreview);
+    
+    document.addEventListener('click', (e) => {
+      if (cartPreview.classList.contains('active')) {
+        const cartIcon = document.querySelector('.cart-link');
+        if (cartIcon && !cartPreview.contains(e.target) && !cartIcon.contains(e.target)) {
+          hideCartPreview();
+        }
+      }
+    });
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && cartPreview.classList.contains('active')) {
+        hideCartPreview();
+      }
+    });
+  }
+  
+  const currentPage = window.location.pathname.split('/').pop();
+  
+  if (currentPage === 'index.php' || currentPage === '' || currentPage === 'index.php') {
+    initHomePage();
+  } else if (currentPage === 'bookshop.php' || currentPage === 'bookshop.php') {
+    initProductsPage();
+  } else if (currentPage === 'checkout.php' || currentPage === 'checkout.php') {
+    initCheckoutPage();
+  }
+  
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('add-to-cart')) {
+      const productId = parseInt(e.target.dataset.id);
+      cartManager.addItem(productId);
+    }
+  });
+  
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      if (navList && navList.classList.contains('active')) {
+        navList.classList.remove('active');
+        hamburger.classList.remove('active');
+      }
+    });
+  });
+});
