@@ -1,4 +1,3 @@
-
 <?php
 require_once 'config/database.php';
 checkAdminLogin();
@@ -6,66 +5,100 @@ checkAdminLogin();
 $message = '';
 $error = '';
 
-// Handle edit transaction
-if ($_POST && isset($_POST['action']) && $_POST['action'] === 'edit_transaction') {
-    $transaction_id = $_POST['transaction_id'] ?? '';
+// Handle edit order
+if ($_POST && isset($_POST['action']) && $_POST['action'] === 'edit_order') {
+    $order_id = $_POST['order_id'] ?? '';
     $customer_name = $_POST['customer_name'] ?? '';
     $customer_email = $_POST['customer_email'] ?? '';
     $customer_phone = $_POST['customer_phone'] ?? '';
+    $delivery_location = $_POST['delivery_location'] ?? '';
     $status = $_POST['status'] ?? '';
+    $tracking_status = $_POST['tracking_status'] ?? '';
+    $tracking_notes = $_POST['tracking_notes'] ?? '';
     
-    if (!empty($transaction_id) && !empty($customer_name) && !empty($customer_phone) && !empty($status)) {
+    if (!empty($order_id) && !empty($customer_name) && !empty($customer_phone) && !empty($status)) {
         try {
             $conn = getConnection();
-            $stmt = $conn->prepare("UPDATE transactions SET customer_name = ?, customer_email = ?, customer_phone = ?, status = ? WHERE id = ?");
-            $stmt->bind_param("ssssi", $customer_name, $customer_email, $customer_phone, $status, $transaction_id);
+            $stmt = $conn->prepare("UPDATE orders SET customer_name = ?, customer_email = ?, customer_phone = ?, delivery_location = ?, status = ?, tracking_status = ?, tracking_notes = ? WHERE id = ?");
+            $stmt->bind_param("sssssssi", $customer_name, $customer_email, $customer_phone, $delivery_location, $status, $tracking_status, $tracking_notes, $order_id);
             $stmt->execute();
-            $message = 'Transaction updated successfully!';
+            $message = 'Order updated successfully!';
             $stmt->close();
             $conn->close();
         } catch (mysqli_sql_exception $e) {
-            $error = 'Error updating transaction: ' . $e->getMessage();
+            $error = 'Error updating order: ' . $e->getMessage();
         }
     } else {
         $error = 'Please fill in all required fields';
     }
 }
 
-// Handle delete transaction
-if ($_POST && isset($_POST['action']) && $_POST['action'] === 'delete_transaction') {
-    $transaction_id = $_POST['transaction_id'] ?? '';
+// Handle delete order
+if ($_POST && isset($_POST['action']) && $_POST['action'] === 'delete_order') {
+    $order_id = $_POST['order_id'] ?? '';
     
-    if (!empty($transaction_id)) {
+    if (!empty($order_id)) {
         try {
             $conn = getConnection();
-            $stmt = $conn->prepare("DELETE FROM transactions WHERE id = ?");
-            $stmt->bind_param("i", $transaction_id);
+            
+            // Begin transaction
+            $conn->begin_transaction();
+            
+            // Delete order items first
+            $stmt = $conn->prepare("DELETE FROM order_items WHERE order_id = ?");
+            $stmt->bind_param("i", $order_id);
             $stmt->execute();
-            $message = 'Transaction deleted successfully!';
             $stmt->close();
+            
+            // Delete tracking history
+            $stmt = $conn->prepare("DELETE FROM order_tracking_history WHERE order_id = ?");
+            $stmt->bind_param("i", $order_id);
+            $stmt->execute();
+            $stmt->close();
+            
+            // Delete the order
+            $stmt = $conn->prepare("DELETE FROM orders WHERE id = ?");
+            $stmt->bind_param("i", $order_id);
+            $stmt->execute();
+            $stmt->close();
+            
+            // Commit transaction
+            $conn->commit();
+            $message = 'Order deleted successfully!';
             $conn->close();
         } catch (mysqli_sql_exception $e) {
-            $error = 'Error deleting transaction: ' . $e->getMessage();
+            // Rollback transaction on error
+            if (isset($conn)) {
+                $conn->rollback();
+            }
+            $error = 'Error deleting order: ' . $e->getMessage();
         }
     }
 }
 
-// Get all transactions with book details
+// Get all orders with customer details and order items
 try {
     $conn = getConnection();
-    $query = "SELECT t.*, b.title, b.author 
-              FROM transactions t 
-              LEFT JOIN books b ON t.book_id = b.id 
-              ORDER BY t.created_at DESC";
+    $query = "
+        SELECT o.*, 
+               COUNT(oi.id) as item_count,
+               SUM(oi.quantity) as total_quantity
+        FROM orders o 
+        LEFT JOIN order_items oi ON o.id = oi.order_id 
+        GROUP BY o.id 
+        ORDER BY o.created_at DESC
+    ";
     $result = $conn->query($query);
-    $transactions = [];
+    $orders = [];
     while ($row = $result->fetch_assoc()) {
-        $transactions[] = $row;
+        $orders[] = $row;
     }
     $conn->close();
 } catch (mysqli_sql_exception $e) {
     $error = "Database error: " . $e->getMessage();
 }
+
+include 'nav_bar.php';
 ?>
 
 <!DOCTYPE html>
@@ -73,60 +106,21 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transactions - NeoBooks Admin</title>
+    <title>Orders Management - Kiddle Bookstore Admin</title>
     <link rel="stylesheet" href="assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
-            <nav class="sidebar">
-            <div class="sidebar-header">
-                <h3>NeoBooks Admin</h3>
-                <p>Welcome, <?= htmlspecialchars($_SESSION['admin_username']) ?></p>
-            </div>
-            <ul class="sidebar-nav">
-                <li class="nav-item">
-                    <a href="dashboard.php" class="nav-link active">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="users.php" class="nav-link">
-                        <i class="fas fa-users-cog"></i> Admin Management
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="inventory.php" class="nav-link">
-                        <i class="fas fa-boxes"></i> Inventory
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="book.php" class="nav-link">
-                        <i class="fas fa-credit-card"></i> Books
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="stationery.php" class="nav-link">
-                        <i class="fas fa-credit-card"></i> Stationery
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="transactions.php" class="nav-link">
-                        <i class="fas fa-credit-card"></i> Transactions
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="logout.php" class="nav-link">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </li>
-            </ul>
-        </nav>
-        <!-- Main Content -->
+       <!-- Main Content -->
         <main class="main-content">
             <div class="page-header">
-                <h1 class="page-title">Transaction Management</h1>
+                <h1 class="page-title">Orders Management</h1>
+                <div class="action-buttons">
+                    <a href="orders.php" class="btn btn-primary">
+                        <i class="fas fa-chart-line"></i> Customer Analysis
+                    </a>
+                </div>
             </div>
 
             <?php if ($message): ?>
@@ -141,107 +135,186 @@ try {
                 </div>
             <?php endif; ?>
 
-            <!-- Edit Transaction Form -->
-            <div id="editTransactionForm" style="display: none;">
+            <!-- Edit Order Form -->
+            <div id="editOrderForm" style="display: none;">
                 <div class="form-container">
-                    <h3>Edit Transaction</h3>
+                    <h3>Edit Order</h3>
                     <form method="POST" id="editForm">
-                        <input type="hidden" name="action" value="edit_transaction">
-                        <input type="hidden" name="transaction_id" id="edit_transaction_id">
+                        <input type="hidden" name="action" value="edit_order">
+                        <input type="hidden" name="order_id" id="edit_order_id">
+                        
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="edit_customer_name">Customer Name *</label>
                                 <input type="text" id="edit_customer_name" name="customer_name" class="form-control" required>
                             </div>
                             <div class="form-group">
-                                <label for="edit_customer_email">Customer Email</label>
-                                <input type="email" id="edit_customer_email" name="customer_email" class="form-control">
+                                <label for="edit_customer_email">Customer Email *</label>
+                                <input type="email" id="edit_customer_email" name="customer_email" class="form-control" required>
                             </div>
                         </div>
+                        
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="edit_customer_phone">Customer Phone *</label>
                                 <input type="tel" id="edit_customer_phone" name="customer_phone" class="form-control" required>
                             </div>
                             <div class="form-group">
-                                <label for="edit_status">Status *</label>
+                                <label for="edit_delivery_location">Delivery Location</label>
+                                <input type="text" id="edit_delivery_location" name="delivery_location" class="form-control">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit_status">Payment Status *</label>
                                 <select id="edit_status" name="status" class="form-control" required>
                                     <option value="pending">Pending</option>
-                                    <option value="completed">Completed</option>
-                                    <option value="failed">Failed</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="delivered">Delivered</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_tracking_status">Tracking Status *</label>
+                                <select id="edit_tracking_status" name="tracking_status" class="form-control" required>
+                                    <option value="pending">Pending</option>
+                                    <option value="processing">Processing</option>
+                                    <option value="shipped">Shipped</option>
+                                    <option value="out_for_delivery">Out for Delivery</option>
+                                    <option value="delivered">Delivered</option>
+                                    <option value="cancelled">Cancelled</option>
                                 </select>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-save"></i> Update Transaction
-                        </button>
-                        <button type="button" onclick="toggleEditForm()" class="btn btn-danger">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
+                        
+                        <div class="form-row single">
+                            <div class="form-group">
+                                <label for="edit_tracking_notes">Tracking Notes</label>
+                                <textarea id="edit_tracking_notes" name="tracking_notes" class="form-control" rows="3" placeholder="Add tracking updates or notes..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Update Order
+                            </button>
+                            <button type="button" onclick="toggleEditForm()" class="btn btn-danger">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Transactions List -->
+            <!-- Orders List -->
             <div class="table-container">
                 <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-                    <h3>All Transactions (<?= count($transactions ?? []) ?>)</h3>
+                    <h3>All Orders (<?= count($orders ?? []) ?>)</h3>
                 </div>
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th>Order Number</th>
                             <th>Customer</th>
-                            <th>Phone</th>
-                            <th>Book</th>
-                            <th>Quantity</th>
-                            <th>Amount</th>
-                            <th>M-Pesa Ref</th>
-                            <th>Status</th>
-                            <th>Date</th>
+                            <th>Contact</th>
+                            <th>Items</th>
+                            <th>Total Amount</th>
+                            <th>Payment Status</th>
+                            <th>Tracking Status</th>
+                            <th>M-Pesa Receipt</th>
+                            <th>Order Date</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (!empty($transactions)): ?>
-                            <?php foreach ($transactions as $transaction): ?>
+                        <?php if (!empty($orders)): ?>
+                            <?php foreach ($orders as $order): ?>
                                 <tr>
-                                    <td><?= $transaction['id'] ?></td>
                                     <td>
-                                        <div><?= htmlspecialchars($transaction['customer_name']) ?></div>
-                                        <small style="color: var(--text-muted);"><?= htmlspecialchars($transaction['customer_email'] ?? 'N/A') ?></small>
+                                        <strong><?= htmlspecialchars($order['order_number']) ?></strong>
+                                        <?php if ($order['delivery_location']): ?>
+                                            <br><small style="color: var(--text-muted);">📍 <?= htmlspecialchars($order['delivery_location']) ?></small>
+                                        <?php endif; ?>
                                     </td>
-                                    <td><?= htmlspecialchars($transaction['customer_phone']) ?></td>
                                     <td>
-                                        <div><?= htmlspecialchars($transaction['title'] ?? 'Book not found') ?></div>
-                                        <small style="color: var(--text-muted);"><?= htmlspecialchars($transaction['author'] ?? '') ?></small>
+                                        <div><?= htmlspecialchars($order['customer_name']) ?></div>
+                                        <small style="color: var(--text-muted);"><?= htmlspecialchars($order['customer_email']) ?></small>
                                     </td>
-                                    <td><?= $transaction['quantity'] ?></td>
-                                    <td>$<?= number_format($transaction['total_amount'], 2) ?></td>
-                                    <td><?= htmlspecialchars($transaction['mpesa_reference'] ?? 'N/A') ?></td>
+                                    <td><?= htmlspecialchars($order['customer_phone']) ?></td>
+                                    <td>
+                                        <div><?= $order['item_count'] ?> items</div>
+                                        <small style="color: var(--text-muted);"><?= $order['total_quantity'] ?> total qty</small>
+                                    </td>
+                                    <td>
+                                        <strong style="color: var(--accent-primary);">
+                                            Ksh <?= number_format($order['total_amount'], 2) ?>
+                                        </strong>
+                                    </td>
                                     <td>
                                         <?php
-                                        $status = $transaction['status'];
+                                        $status = $order['status'];
                                         $badgeClass = 'badge-warning';
-                                        if ($status === 'completed') $badgeClass = 'badge-success';
-                                        if ($status === 'failed') $badgeClass = 'badge-danger';
+                                        if ($status === 'paid') $badgeClass = 'badge-success';
+                                        if ($status === 'delivered') $badgeClass = 'badge-success';
+                                        if ($status === 'cancelled') $badgeClass = 'badge-danger';
                                         ?>
                                         <span class="badge <?= $badgeClass ?>"><?= ucfirst($status) ?></span>
                                     </td>
-                                    <td><?= date('M j, Y g:i A', strtotime($transaction['created_at'])) ?></td>
                                     <td>
-                                        <button onclick="editTransaction(<?= $transaction['id'] ?>, '<?= htmlspecialchars($transaction['customer_name']) ?>', '<?= htmlspecialchars($transaction['customer_email']) ?>', '<?= htmlspecialchars($transaction['customer_phone']) ?>', '<?= $transaction['status'] ?>')" class="btn btn-sm" style="background: linear-gradient(45deg, #00bcd4, #0097a7); color: white; margin-right: 0.5rem;">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </button>
-                                        <button onclick="deleteTransaction(<?= $transaction['id'] ?>)" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-trash"></i> Delete
-                                        </button>
+                                        <?php
+                                        $tracking_status = $order['tracking_status'];
+                                        $trackingBadgeClass = 'badge-warning';
+                                        if ($tracking_status === 'delivered') $trackingBadgeClass = 'badge-success';
+                                        if ($tracking_status === 'out_for_delivery') $trackingBadgeClass = 'badge-success';
+                                        if ($tracking_status === 'shipped') $trackingBadgeClass = 'badge-warning';
+                                        if ($tracking_status === 'processing') $trackingBadgeClass = 'badge-warning';
+                                        if ($tracking_status === 'cancelled') $trackingBadgeClass = 'badge-danger';
+                                        ?>
+                                        <span class="badge <?= $trackingBadgeClass ?>">
+                                            <?= ucfirst(str_replace('_', ' ', $tracking_status)) ?>
+                                        </span>
+                                        <?php if ($order['tracking_notes']): ?>
+                                            <br><small style="color: var(--text-muted); font-size: 0.8rem;"><?= htmlspecialchars(substr($order['tracking_notes'], 0, 30)) ?>...</small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($order['mpesa_receipt']): ?>
+                                            <code style="background: rgba(0, 255, 231, 0.1); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.8rem;">
+                                                <?= htmlspecialchars($order['mpesa_receipt']) ?>
+                                            </code>
+                                        <?php else: ?>
+                                            <span style="color: var(--text-muted);">N/A</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= date('M j, Y g:i A', strtotime($order['created_at'])) ?></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button onclick="editOrder(
+                                                <?= $order['id'] ?>, 
+                                                '<?= htmlspecialchars($order['customer_name']) ?>', 
+                                                '<?= htmlspecialchars($order['customer_email']) ?>', 
+                                                '<?= htmlspecialchars($order['customer_phone']) ?>',
+                                                '<?= htmlspecialchars($order['delivery_location'] ?? '') ?>',
+                                                '<?= $order['status'] ?>',
+                                                '<?= $order['tracking_status'] ?>',
+                                                '<?= htmlspecialchars($order['tracking_notes'] ?? '') ?>'
+                                            )" class="btn btn-sm" style="background: linear-gradient(45deg, var(--accent-tertiary), var(--accent-primary)); color: white; margin-right: 0.5rem;">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
+                                            <button onclick="deleteOrder(<?= $order['id'] ?>)" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="10" style="text-align: center; color: #666;">No transactions found</td>
+                                <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                    <i class="fas fa-shopping-cart" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                                    <br>No orders found
+                                </td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -252,31 +325,47 @@ try {
 
     <script>
         function toggleEditForm() {
-            const form = document.getElementById('editTransactionForm');
+            const form = document.getElementById('editOrderForm');
             form.style.display = form.style.display === 'none' ? 'block' : 'none';
         }
 
-        function editTransaction(id, customerName, customerEmail, customerPhone, status) {
-            document.getElementById('edit_transaction_id').value = id;
+        function editOrder(id, customerName, customerEmail, customerPhone, deliveryLocation, status, trackingStatus, trackingNotes) {
+            document.getElementById('edit_order_id').value = id;
             document.getElementById('edit_customer_name').value = customerName;
-            document.getElementById('edit_customer_email').value = customerEmail || '';
+            document.getElementById('edit_customer_email').value = customerEmail;
             document.getElementById('edit_customer_phone').value = customerPhone;
+            document.getElementById('edit_delivery_location').value = deliveryLocation || '';
             document.getElementById('edit_status').value = status;
+            document.getElementById('edit_tracking_status').value = trackingStatus;
+            document.getElementById('edit_tracking_notes').value = trackingNotes || '';
+            
+            // Scroll to edit form
             toggleEditForm();
+            document.getElementById('editOrderForm').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function deleteTransaction(id) {
-            if (confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
+        function deleteOrder(id) {
+            if (confirm('Are you sure you want to delete this order? This will also delete all order items and tracking history. This action cannot be undone.')) {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.innerHTML = `
-                    <input type="hidden" name="action" value="delete_transaction">
-                    <input type="hidden" name="transaction_id" value="${id}">
+                    <input type="hidden" name="action" value="delete_order">
+                    <input type="hidden" name="order_id" value="${id}">
                 `;
                 document.body.appendChild(form);
                 form.submit();
             }
         }
+
+        // Close edit form when clicking outside
+        document.addEventListener('click', function(event) {
+            const editForm = document.getElementById('editOrderForm');
+            const editButton = event.target.closest('button[onclick*="editOrder"]');
+            
+            if (editForm.style.display === 'block' && !editForm.contains(event.target) && !editButton) {
+                toggleEditForm();
+            }
+        });
     </script>
 </body>
 </html>

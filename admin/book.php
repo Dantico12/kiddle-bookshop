@@ -195,6 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+include 'nav_bar.php';
 ?>
 
 <!DOCTYPE html>
@@ -205,269 +206,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Books Management - KiddleBookshop Admin</title>
     <link rel="stylesheet" href="assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        /* Modal Styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .modal-overlay.show {
-            display: flex;
-            opacity: 1;
-        }
-
-        .modal-content {
-            background: var(--bg-glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--border-glass);
-            border-radius: 20px;
-            padding: 2.5rem;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: var(--shadow-deep);
-            position: relative;
-            transform: scale(0.9) translateY(30px);
-            transition: transform 0.3s ease;
-        }
-
-        .modal-overlay.show .modal-content {
-            transform: scale(1) translateY(0);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border-glass);
-        }
-
-        .modal-title {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin: 0;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: var(--accent-primary);
-            font-size: 1.8rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            padding: 0.5rem;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .close-btn:hover {
-            transform: rotate(90deg) scale(1.2);
-            color: var(--danger);
-            background: rgba(255, 107, 107, 0.1);
-        }
-
-        .books-actions {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-
-        /* Image Upload Styles */
-        .image-upload-container {
-            position: relative;
-            border: 2px dashed var(--border-glass);
-            border-radius: 10px;
-            padding: 2rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            margin-bottom: 1rem;
-        }
-
-        .image-upload-container:hover {
-            border-color: var(--accent-primary);
-            background: rgba(0, 255, 231, 0.05);
-        }
-
-        .image-upload-container.has-image {
-            border-style: solid;
-            border-color: var(--accent-primary);
-            padding: 1rem;
-        }
-
-        .upload-icon {
-            font-size: 3rem;
-            color: var(--accent-primary);
-            margin-bottom: 1rem;
-        }
-
-        .upload-text {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .image-preview {
-            max-width: 200px;
-            max-height: 200px;
-            border-radius: 10px;
-            object-fit: cover;
-            margin-bottom: 1rem;
-        }
-
-        .remove-image {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: var(--danger);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-        }
-
-        .item-image {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 8px;
-            border: 2px solid var(--border-glass);
-        }
-
-        .no-image {
-            width: 60px;
-            height: 60px;
-            background: var(--bg-glass);
-            border: 2px solid var(--border-glass);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-        }
-
-        .rating-input {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .star-rating {
-            display: flex;
-            gap: 2px;
-        }
-
-        .star {
-            color: #ffd700;
-            font-size: 1rem;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-            justify-content: flex-end;
-        }
-
-        @media (max-width: 768px) {
-            .modal-content {
-                width: 95%;
-                padding: 1.5rem;
-                max-height: 90vh;
-            }
-
-            .books-actions {
-                justify-content: center;
-            }
-
-            .button-group {
-                justify-content: center;
-            }
-
-            .image-upload-container {
-                padding: 1.5rem;
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
-        <nav class="sidebar">
-            <div class="sidebar-header">
-                <h3>KiddleBookshop Admin</h3>
-                <p>Welcome, <?= htmlspecialchars($_SESSION['admin_username']) ?></p>
-            </div>
-            <ul class="sidebar-nav">
-                <li class="nav-item">
-                    <a href="dashboard.php" class="nav-link">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="users.php" class="nav-link">
-                        <i class="fas fa-users-cog"></i> Admin Management
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="inventory.php" class="nav-link">
-                        <i class="fas fa-boxes"></i> Inventory Overview
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="books.php" class="nav-link active">
-                        <i class="fas fa-book"></i> Books Management
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="stationery.php" class="nav-link">
-                        <i class="fas fa-pen"></i> Stationery Management
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="transactions.php" class="nav-link">
-                        <i class="fas fa-credit-card"></i> Transactions
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="logout.php" class="nav-link">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </li>
-            </ul>
-        </nav>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -498,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <!-- Books List -->
             <div class="table-container">
-                <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                <div class="table-header">
                     <h3>All Books (<?= count($books ?? []) ?>)</h3>
                 </div>
                 <table class="table">
@@ -543,10 +284,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </td>
                                     <td><?= $book['quantity'] ?></td>
                                     <td>
-                                        <?php if ($book['quantity'] <= ($book['reorder_level'] ?? 10)): ?>
-                                            <span class="badge badge-warning">Low Stock</span>
-                                        <?php elseif ($book['quantity'] == 0): ?>
+                                        <?php if ($book['quantity'] == 0): ?>
                                             <span class="badge badge-danger">Out of Stock</span>
+                                        <?php elseif ($book['quantity'] <= ($book['reorder_level'] ?? 10)): ?>
+                                            <span class="badge badge-warning">Low Stock</span>
                                         <?php else: ?>
                                             <span class="badge badge-success">In Stock</span>
                                         <?php endif; ?>
@@ -562,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             '<?= htmlspecialchars($book['description'] ?? '') ?>', 
                                             '<?= htmlspecialchars($book['image'] ?? '') ?>', 
                                             <?= $book['rating'] ?? 0 ?>
-                                        )" class="btn btn-sm" style="background: linear-gradient(45deg, #00bcd4, #0097a7); color: white; margin-right: 0.5rem;">
+                                        )" class="btn btn-sm btn-edit-book-modal">
                                             <i class="fas fa-edit"></i> Edit
                                         </button>
                                         <button onclick="deleteBook(<?= $book['id'] ?>)" class="btn btn-sm btn-danger">
@@ -573,7 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="9" style="text-align: center; color: #666;">No books found</td>
+                                <td colspan="9" class="text-center text-muted-alt">No books found</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -652,7 +393,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 
                 <div class="button-group">
-                    <button type="button" onclick="closeAddModal()" class="btn btn-sm" style="background: var(--text-muted); color: white;">Cancel</button>
+                    <button type="button" onclick="closeAddModal()" class="btn btn-sm btn-cancel">Cancel</button>
                     <button type="submit" class="btn btn-success">Add Book</button>
                 </div>
             </form>
@@ -718,13 +459,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label>Current Image</label>
                         <div id="editCurrentImage" class="upload-text">No current image</div>
-                        <label for="edit_image" style="margin-top: 1rem;">Upload New Image</label>
+                        <label for="edit_image" class="edit-image-label">Upload New Image</label>
                         <input type="file" id="edit_image" name="edit_image" class="form-control" accept="image/*" onchange="previewEditImage(this)">
                     </div>
                 </div>
                 
                 <div class="button-group">
-                    <button type="button" onclick="closeEditModal()" class="btn btn-sm" style="background: var(--text-muted); color: white;">Cancel</button>
+                    <button type="button" onclick="closeEditModal()" class="btn btn-sm btn-cancel">Cancel</button>
                     <button type="submit" class="btn btn-success">Update Book</button>
                 </div>
             </form>

@@ -112,6 +112,7 @@ try {
 } catch (mysqli_sql_exception $e) {
     $error = "Database error: " . $e->getMessage();
 }
+include 'nav_bar.php';
 ?>
 
 <!DOCTYPE html>
@@ -230,51 +231,6 @@ try {
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
-        <nav class="sidebar">
-            <div class="sidebar-header">
-                <h3>KiddleBookshop Admin</h3>
-                <p>Welcome, <?= htmlspecialchars($_SESSION['admin_username']) ?></p>
-            </div>
-            <ul class="sidebar-nav">
-                <li class="nav-item">
-                    <a href="dashboard.php" class="nav-link">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="admin_management.php" class="nav-link active">
-                        <i class="fas fa-users-cog"></i> Admin Management
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="inventory.php" class="nav-link">
-                        <i class="fas fa-boxes"></i> Inventory
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="book.php" class="nav-link">
-                        <i class="fas fa-credit-card"></i> Books
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="stationery.php" class="nav-link">
-                        <i class="fas fa-credit-card"></i> Stationery
-                    </a>
-                <li class="nav-item">
-                    <a href="transactions.php" class="nav-link">
-                        <i class="fas fa-credit-card"></i> Transactions
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="logout.php" class="nav-link">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </li>
-            </ul>
-        </nav>
-
         <!-- Main Content -->
         <main class="main-content">
             <div class="page-header">

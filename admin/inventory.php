@@ -68,6 +68,7 @@ try {
 } catch (mysqli_sql_exception $e) {
     $error = "Database error: " . $e->getMessage();
 }
+include 'nav_bar.php';
 ?>
 
 <!DOCTYPE html>
@@ -78,240 +79,9 @@ try {
     <title>Inventory Overview - KiddleBookshop Admin</title>
     <link rel="stylesheet" href="assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .inventory-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: var(--bg-glass);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid var(--border-glass);
-            border-radius: 20px;
-            padding: 2rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-deep);
-        }
-
-        .stat-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            font-family: 'Orbitron', monospace;
-            color: var(--accent-primary);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .filter-tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-glass);
-            color: var(--text-secondary);
-            padding: 0.8rem 1.5rem;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 600;
-        }
-
-        .filter-btn.active,
-        .filter-btn:hover {
-            background: var(--accent-primary);
-            color: var(--bg-primary);
-            border-color: var(--accent-primary);
-            transform: translateY(-2px);
-        }
-
-        .item-type-badge {
-            display: inline-block;
-            padding: 0.2rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .item-type-book {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
-        }
-
-        .item-type-stationery {
-            background: linear-gradient(45deg, #2196F3, #1976D2);
-            color: white;
-        }
-
-        .item-image {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 8px;
-            border: 2px solid var(--border-glass);
-        }
-
-        .no-image {
-            width: 60px;
-            height: 60px;
-            background: var(--bg-glass);
-            border: 2px solid var(--border-glass);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-        }
-
-        .star-rating {
-            display: flex;
-            gap: 2px;
-            align-items: center;
-        }
-
-        .star {
-            color: #ffd700;
-            font-size: 1rem;
-        }
-
-        .quick-actions {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .search-box {
-            flex: 1;
-            min-width: 300px;
-            position: relative;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 0.8rem 1rem 0.8rem 3rem;
-            background: var(--bg-glass);
-            border: 1px solid var(--border-glass);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 1rem;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-secondary);
-        }
-
-        @media (max-width: 768px) {
-            .inventory-stats {
-                grid-template-columns: 1fr;
-            }
-
-            .filter-tabs {
-                justify-content: center;
-            }
-
-            .quick-actions {
-                flex-direction: column;
-            }
-
-            .search-box {
-                min-width: auto;
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
-        <nav class="sidebar">
-            <div class="sidebar-header">
-                <h3>KiddleBookshop Admin</h3>
-                <p>Welcome, <?= htmlspecialchars($_SESSION['admin_username']) ?></p>
-            </div>
-            <ul class="sidebar-nav">
-                <li class="nav-item">
-                    <a href="dashboard.php" class="nav-link">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="users.php" class="nav-link">
-                        <i class="fas fa-users-cog"></i> Admin Management
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="inventory.php" class="nav-link active">
-                        <i class="fas fa-boxes"></i> Inventory Overview
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="book.php" class="nav-link">
-                        <i class="fas fa-book"></i> Books Management
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="stationery.php" class="nav-link">
-                        <i class="fas fa-pen"></i> Stationery Management
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="transactions.php" class="nav-link">
-                        <i class="fas fa-credit-card"></i> Transactions
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="logout.php" class="nav-link">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </li>
-            </ul>
-        </nav>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -402,7 +172,7 @@ try {
 
             <!-- Inventory Table -->
             <div class="table-container">
-                <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                <div class="table-header">
                     <h3>All Inventory Items (<?= $totalItems ?>)</h3>
                 </div>
                 <table class="table" id="inventoryTable">
@@ -477,11 +247,11 @@ try {
                                     </td>
                                     <td>
                                         <?php if ($item['item_type'] === 'book'): ?>
-                                            <button onclick="window.location.href='books.php?edit=<?= $item['id'] ?>'" class="btn btn-sm" style="background: linear-gradient(45deg, #4CAF50, #45a049); color: white; margin-right: 0.5rem;">
+                                            <button onclick="window.location.href='books.php?edit=<?= $item['id'] ?>'" class="btn btn-sm btn-edit-book">
                                                 <i class="fas fa-edit"></i> Edit
                                             </button>
                                         <?php else: ?>
-                                            <button onclick="window.location.href='stationery.php?edit=<?= $item['id'] ?>'" class="btn btn-sm" style="background: linear-gradient(45deg, #2196F3, #1976D2); color: white; margin-right: 0.5rem;">
+                                            <button onclick="window.location.href='stationery.php?edit=<?= $item['id'] ?>'" class="btn btn-sm btn-edit-stationery">
                                                 <i class="fas fa-edit"></i> Edit
                                             </button>
                                         <?php endif; ?>
@@ -493,7 +263,7 @@ try {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="12" style="text-align: center; color: #666;">No items found</td>
+                                <td colspan="12" class="text-center text-muted-alt">No items found</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

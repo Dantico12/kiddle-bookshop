@@ -1,0 +1,26 @@
+# Environment variables - NEVER COMMIT
+.env
+
+# Composer dependencies
+/vendor/
+
+# Log files
+/logs/*.log
+!/logs/.gitkeep
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
